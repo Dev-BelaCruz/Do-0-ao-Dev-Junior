@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Agendamento Inteligente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="app">
+        <!-- Header -->
+        <header class="mb-12 text-center">
+            <div class="flex justify-center items-center mb-4">
+                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/d0a6936f-9937-4970-8441-e771f566f329.png" alt="Logo da clínica ou salão - ícone de agenda digital com tons roxos e brancos" class="h-12" />
+            </div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Agendamento Digital Inteligente</h1>
+            <p class="text-lg text-gray-600">Encontre o horário perfeito com nosso sistema de agendamento otimizado</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Step 1: Choose Professional -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden p-6 lg:col-span-1" v-if="currentStep === 1">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold text-gray-800">1. Escolha o Profissional</h2>
+                    <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">1/4</span>
+                </div>
+                
+                <div class="space-y-4">
+                    <div v-for="professional in professionals" :key="professional.id" 
+                         class="flex items-center p-4 border rounded-lg cursor-pointer hover:shadow-md transition-all"
+                         :class="{'border-purple-500 bg-purple-50': selectedProfessional === professional.id}"
+                         @click="selectProfessional(professional.id)">
+                        <div class="flex-shrink-0 mr-4">
+                            <img :src="professional.photo" :alt="'Foto do profissional ' + professional.name + ' - ' + professional.specialty" 
+                                 class="w-16 h-16 rounded-full object-cover border-2 border-white shadow" />
+                        </div>
+                        <div class="flex-grow">
+                            <h3 class="font-medium text-gray-900">{{ professional.name }}</h3>
+                            <p class="text-sm text-gray-600">{{ professional.specialty }}</p>
+                            <div class="flex items-center mt-1">
+                                <span class="text-yellow-400 text-xs">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
+                                </span>
+                                <span class="text-gray-500 text-xs ml-1">({{ professional.rating }})</span>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <button @click="nextStep" :disabled="!selectedProfessional" class="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
+                    Próximo
+                </button>
+            </div>
+
+            <!-- Step 2: Choose Service -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden p-6 lg:col-span-1" v-if="currentStep === 2">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold text-gray-800">2. Escolha o Serviço</h2>
+                    <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">2/4</span>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="service-search" class="block text-sm font-medium text-gray-700 mb-1">Pesquisar serviço</label>
+                    <div class="relative">
+                        <input id="service-search" type="text" v-model="serviceSearch" placeholder="Digite o nome do serviço..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
+                        <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    <div v-for="service in filteredServices" :key="service.id" 
+                         class="flex items-start p-4 border rounded-lg cursor-pointer hover:shadow-md transition-all"
+                         :class="{'border-purple-500 bg-purple-50': selectedService === service.id}"
+                         @click="selectService(service.id)">
+                        <div class="flex-shrink-0 mt-1 mr-4">
+                            <img :src="service.icon" :alt="'Ícone para ' + service.name" class="w-8 h-8" />
+                        </div>
+                        <div class="flex-grow">
+                            <h3 class="font-medium text-gray-900">{{ service.name }}</h3>
+                            <p class="text-sm text-gray-600">{{ service.description }}</p>
+                            <div class="mt-2 flex justify-between items-center">
+                                <span class="text-sm font-medium">{{ formatPrice(service.price) }}</span>
+                                <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">{{ service.duration }} min</span>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between mt-6">
+                    <button @click="prevStep" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2.5 px-4 rounded-lg transition-colors">
+                        Voltar
+                    </button>
+                    <button @click="nextStep" :disabled="!selectedService" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        Próximo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Choose Date & Time -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden p-6 lg:col-span-2" v-if="currentStep === 3">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold text-gray-800">3. Escolha a Data e Horário</h2>
+                    <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">3/4</span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Calendar -->
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-medium text-gray-900">Selecione uma data</h3>
+                            <div class="flex items-center space-x-2">
+                                <button @click="prevMonth" class="p-1 rounded-full hover:bg-gray-100">
+                                    <i class="fas fa-chevron-left text-gray-600"></i>
+                                </button>
+                                <span class="font-medium text-sm">{{ monthNames[currentMonth] }} {{ currentYear }}</span>
+                                <button @click="nextMonth" class="p-1 rounded-full hover:bg-gray-100">
+                                    <i class="fas fa-chevron-right text-gray-600"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-7 gap-1 mb-2">
+                            <div class="text-center text-xs font-medium text-gray-500 py-1" v-for="day in ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']" :key="day">
+                                {{ day }}
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-7 gap-1">
+                            <div v-for="day in calendarDays" :key="day.date" 
+                                 @click="selectDate(day.date, day.available)"
+                                 class="text-center py-2 rounded-lg cursor-pointer text-sm"
+                                 :class="{
+                                     'text-gray-300': !day.currentMonth,
+                                     'text-gray-700': day.currentMonth && !day.isSelected,
+                                     'bg-purple-600 text-white font-medium': day.isSelected,
+                                     'hover:bg-gray-100': day.currentMonth && !day.isSelected && day.available,
+                                     'cursor-not-allowed bg-gray-100': !day.available
+                                 }">
+                                {{ day.date.getDate() }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Time Slots -->
+                    <div>
+                        <h3 class="font-medium text-gray-900 mb-4">Horários disponíveis</h3>
+                        
+                        <div v-if="loadingSlots" class="flex justify-center items-center h-64">
+                            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+                        </div>
+                        
+                        <div v-else>
+                            <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0 pt-0.5">
+                                        <i class="fas fa-lightbulb text-blue-500"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h4 class="text-sm font-medium text-blue-800 mb-1">Sugestão de horário ideal</h4>
+                                        <p class="text-xs text-blue-700">Nossa IA recomenda horários com menor espera e melhor atendimento</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div v-if="selectedDate">
+                                <p class="text-sm text-gray-600 mb-2">Horários para {{ formatSelectedDate }}</p>
+                                
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    <button v-for="slot in availableTimeSlots" :key="slot.time"
+                                            @click="selectedTime = slot.time"
+                                            class="time-slot py-2 px-3 text-sm rounded-lg border text-center"
+                                            :class="{
+                                                'border-purple-500 bg-purple-50 text-purple-700 font-medium': selectedTime === slot.time,
+                                                'border-gray-200 hover:border-purple-300': selectedTime !== slot.time,
+                                                'bg-green-50 border-green-200 pulse': slot.recommended
+                                            }">
+                                        {{ slot.time }}
+                                        <span v-if="slot.recommended" class="text-green-600 text-xs block">Recomendado</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div v-else class="text-center py-8">
+                                <i class="fas fa-calendar-alt text-gray-300 text-4xl mb-3"></i>
+                                <p class="text-gray-500 text-sm">Selecione uma data para ver os horários disponíveis</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between mt-6">
+                    <button @click="prevStep" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2.5 px-4 rounded-lg transition-colors">
+                        Voltar
+                    </button>
+                    <button @click="nextStep" :disabled="!selectedTime" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        Próximo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 4: Confirm Booking -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden p-6 lg:col-span-2" v-if="currentStep === 4">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold text-gray-800">4. Confirme seu Agendamento</h2>
+                    <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">4/4</span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <!-- Booking Summary -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Resumo do Agendamento</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0 mt-1 mr-3">
+                                    <i class="fas fa-user text-purple-500"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-700">Profissional</h4>
+                                    <p class="text-gray-900">{{ selectedProfessionalDetails.name }}</p>
+                                    <p class="text-xs text-gray-600">{{ selectedProfessionalDetails.specialty }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0 mt-1 mr-3">
+                                    <i class="fas fa-scissors text-purple-500"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-700">Serviço</h4>
+                                    <p class="text-gray-900">{{ selectedServiceDetails.name }}</p>
+                                    <div class="flex justify-between">
+                                        <p class="text-xs text-gray-600">{{ selectedServiceDetails.duration }} minutos</p>
+                                        <p class="text-sm font-medium">{{ formatPrice(selectedServiceDetails.price) }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0 mt-1 mr-3">
+                                    <i class="fas fa-calendar-alt text-purple-500"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-700">Data e Horário</h4>
+                                    <p class="text-gray-900">{{ formatSelectedDate }} às {{ selectedTime }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Customer Info -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Seus Dados</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label for="customer-name" class="block text-sm font-medium text-gray-700 mb-1">Nome completo</label>
+                                <input type="text" id="customer-name" v-model="customerName" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label for="customer-phone" class="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                                    <input type="tel" id="customer-phone" v-model="customerPhone" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
+                                </div>
+                                <div>
+                                    <label for="customer-email" class="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                                    <input type="email" id="customer-email" v-model="customerEmail" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="customer-notes" class="block text-sm font-medium text-gray-700 mb-1">Observações (opcional)</label>
+                                <textarea id="customer-notes" v-model="customerNotes" rows="2"
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"></textarea>
+                            </div>
+                            
+                            <div class="flex items-start">
+                                <div class="flex items-center h-5">
+                                    <input id="terms" v-model="termsAccepted" type="checkbox" 
+                                           class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+                                </div>
+                                <div class="ml-3">
+                                    <label for="terms" class="text-sm text-gray-700">
+                                        Eu concordo com os <a href="#" class="text-purple-600 hover:underline">Termos de Serviço</a> e 
+                                        <a href="#" class="text-purple-600 hover:underline">Política de Privacidade</a>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between">
+                    <button @click="prevStep" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2.5 px-4 rounded-lg transition-colors">
+                        Voltar
+                    </button>
+                    <button @click="confirmBooking" :disabled="!canConfirmBooking" 
+                            class="bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
+                        Confirmar Agendamento
+                    </button>
+                </div>
+            </div>
+
+            <!-- Booking Confirmed -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden p-8 text-center" v-if="currentStep === 5">
+                <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-check text-green-500 text-4xl"></i>
+                </div>
+                
+                <h2 class="text-2xl font-bold text-gray-800 mb-3">Agendamento Confirmado!</h2>
+                <p class="text-gray-600 mb-6">Você receberá um e-mail de confirmação com todos os detalhes.</p>
+                
+                <div class="max-w-md mx-auto bg-gray-50 rounded-lg p-4 mb-8">
+                    <div class="text-left">
+                        <div class="flex justify-between mb-3">
+                            <span class="text-gray-500">Código</span>
+                            <span class="font-medium">#{{ bookingCode }}</span>
+                        </div>
+                        <div class="flex justify-between mb-3">
+                            <span class="text-gray-500">Profissional</span>
+                            <span class="font-medium">{{ selectedProfessionalDetails.name }}</span>
+                        </div>
+                        <div class="flex justify-between mb-3">
+                            <span class="text-gray-500">Serviço</span>
+                            <span class="font-medium">{{ selectedServiceDetails.name }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Data/Horário</span>
+                            <span class="font-medium">{{ formatSelectedDate }} às {{ selectedTime }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    <button @click="addToGoogleCalendar" class="w-full max-w-xs mx-auto bg-white border border-gray-300 text-gray-700 font-medium py-2.5 px-4 rounded-lg hover:bg-gray-50 transition-colors">
+                        <i class="fab fa-google mr-2"></i> Adicionar ao Google Agenda
+                    </button>
+                    <button @click="startNewBooking" class="w-full max-w-xs mx-auto bg-purple-600 hover:bg-purple-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors">
+                        Novo Agendamento
+                    </button>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Footer -->
+        <footer class="mt-16 text-center text-gray-500 text-sm">
+            <p>© 2023 Sistema de Agendamento Inteligente. Todos os direitos reservados.</p>
+            <div class="mt-2 flex justify-center space-x-4">
+                <a href="#" class="hover:text-purple-600">Termos de Serviço</a>
+                <a href="#" class="hover:text-purple-600">Política de Privacidade</a>
+                <a href="#" class="hover:text-purple-600">Contato</a>
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.47/dist/vue.global.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

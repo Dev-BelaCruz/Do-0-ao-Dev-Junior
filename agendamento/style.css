@@ -1,0 +1,48 @@
+  :root {
+            --primary: #6C63FF;
+            --secondary: #4D44DB;
+            --light: #F5F5FF;
+            --dark: #1E1E2C;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        .time-slot {
+            transition: all 0.2s ease;
+        }
+        
+        .time-slot:hover {
+            transform: translateY(-2px);
+        }
+        
+        .calendar-day.selected {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        .slide-fade-enter-active, .slide-fade-leave-active {
+            transition: all 0.3s ease;
+        }
+        
+        .slide-fade-enter-from {
+            transform: translateX(10px);
+            opacity: 0;
+        }
+        
+        .slide-fade-leave-to {
+            transform: translateX(-10px);
+            opacity: 0;
+        }

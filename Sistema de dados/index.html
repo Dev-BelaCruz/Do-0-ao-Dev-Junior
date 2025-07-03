@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Dados - Excel Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary-green: #4CAF50;
+            --primary-purple: #9C27B0;
+            --light-green: #E8F5E9;
+            --light-purple: #F3E5F5;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        .header-bg {
+            background: linear-gradient(135deg, var(--primary-purple), var(--primary-green));
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-purple);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #7B1FA2;
+        }
+        
+        .btn-secondary {
+            background-color: var(--primary-green);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #388E3C;
+        }
+        
+        .search-highlight {
+            background-color: #FFF59D;
+            padding: 0 2px;
+        }
+        
+        @media (max-width: 768px) {
+            .responsive-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="header-bg text-white rounded-t-lg shadow-lg mb-8">
+            <div class="p-6">
+                <h1 class="text-3xl font-bold">Sistema de Armazenamento de Dados</h1>
+                <p class="mt-2">Uma interface simples para guardar e buscar informações</p>
+            </div>
+        </div>
+        
+        <!-- Controls -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="flex flex-wrap gap-4 mb-6">
+                <div class="flex-grow">
+                    <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Buscar dados</label>
+                    <div class="flex">
+                        <input type="text" id="search" placeholder="Digite para buscar..." class="flex-grow px-4 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                        <button id="searchBtn" class="btn-secondary px-4 py-2 rounded-r-lg">Buscar</button>
+                    </div>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button id="addRowBtn" class="btn-primary px-4 py-2 rounded-lg">+ Nova Linha</button>
+                    <button id="clearBtn" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg text-gray-800">Limpar Tudo</button>
+                </div>
+            </div>
+            
+            <div class="flex gap-4 mb-2">
+                <div>
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" id="caseSensitive" class="rounded text-purple-600">
+                        <span class="ml-2 text-sm text-gray-700">Diferenciar maiúsculas/minúsculas</span>
+                    </label>
+                </div>
+                <div>
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" id="exactMatch" class="rounded text-green-600">
+                        <span class="ml-2 text-sm text-gray-700">Correspondência exata</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="responsive-table overflow-x-auto">
+                <table id="dataTable" class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telefone</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cidade</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Rows will be added here dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tableBody = document.getElementById('tableBody');
+            const addRowBtn = document.getElementById('addRowBtn');
+            const searchBtn = document.getElementById('searchBtn');
+            const searchInput = document.getElementById('search');
+            const clearBtn = document.getElementById('clearBtn');
+            const caseSensitive = document.getElementById('caseSensitive');
+            const exactMatch = document.getElementById('exactMatch');
+            
+            let data = JSON.parse(localStorage.getItem('excelData')) || [];
+            let currentId = data.length > 0 ? Math.max(...data.map(item => item.id)) + 1 : 1;
+            
+            // Render initial data
+            renderTable();
+            
+            // Add new row
+            addRowBtn.addEventListener('click', function() {
+                const newRow = {
+                    id: currentId++,
+                    nome: '',
+                    email: '',
+                    telefone: '',
+                    cidade: ''
+                };
+                data.push(newRow);
+                saveData();
+                renderTable();
+                // Focus on the first cell of the new row
+                const lastRow = tableBody.lastElementChild;
+                if (lastRow) {
+                    const firstInput = lastRow.querySelector('input');
+                    if (firstInput) firstInput.focus();
+                }
+            });
+            
+            // Search functionality
+            searchBtn.addEventListener('click', performSearch);
+            searchInput.addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+            
+            function performSearch() {
+                const searchTerm = searchInput.value.trim();
+                if (!searchTerm) {
+                    renderTable();
+                    return;
+                }
+                
+                const rows = tableBody.querySelectorAll('tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td:not(:last-child)');
+                    let found = false;
+                    
+                    cells.forEach(cell => {
+                        const input = cell.querySelector('input');
+                        const value = input ? input.value : cell.textContent;
+                        
+                        let searchInValue;
+                        let searchTermToUse;
+                        
+                        if (caseSensitive.checked) {
+                            searchInValue = value;
+                            searchTermToUse = searchTerm;
+                        } else {
+                            searchInValue = value.toLowerCase();
+                            searchTermToUse = searchTerm.toLowerCase();
+                        }
+                        
+                        if (exactMatch.checked) {
+                            if (searchInValue === searchTermToUse) {
+                                found = true;
+                                highlightText(input || cell, searchTerm);
+                            }
+                        } else {
+                            if (searchInValue.includes(searchTermToUse)) {
+                                found = true;
+                                highlightText(input || cell, searchTerm);
+                            }
+                        }
+                    });
+                    
+                    if (found) {
+                        row.style.backgroundColor = 'var(--light-purple)';
+                    } else {
+                        row.style.backgroundColor = '';
+                        removeHighlights(row);
+                    }
+                });
+            }
+            
+            function highlightText(element, text) {
+                if (element.tagName === 'INPUT') {
+                    return; // Don't highlight input elements directly
+                }
+                
+                const content = element.textContent;
+                const regex = new RegExp(`(${escapeRegExp(text)})`, caseSensitive.checked ? 'g' : 'gi');
+                const highlighted = content.replace(regex, '<span class="search-highlight">$1</span>');
+                element.innerHTML = highlighted;
+            }
+            
+            function removeHighlights(row) {
+                const highlights = row.querySelectorAll('.search-highlight');
+                highlights.forEach(hl => {
+                    const parent = hl.parentNode;
+                    parent.replaceChild(document.createTextNode(hl.textContent), hl);
+                    parent.normalize();
+                });
+            }
+            
+            function escapeRegExp(string) {
+                return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            }
+            
+            // Clear all data
+            clearBtn.addEventListener('click', function() {
+                if (confirm('Tem certeza que deseja limpar todos os dados? Isso não pode ser desfeito.')) {
+                    data = [];
+                    currentId = 1;
+                    saveData();
+                    renderTable();
+                    searchInput.value = '';
+                }
+            });
+            
+            // Render table with current data
+            function renderTable() {
+                tableBody.innerHTML = '';
+                
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50';
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <input type="text" class="w-full px-2 py-1 border border-gray-300 rounded" value="${item.nome}" data-field="nome" data-id="${item.id}">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <input type="text" class="w-full px-2 py-1 border border-gray-300 rounded" value="${item.email}" data-field="email" data-id="${item.id}">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <input type="text" class="w-full px-2 py-1 border border-gray-300 rounded" value="${item.telefone}" data-field="telefone" data-id="${item.id}">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <input type="text" class="w-full px-2 py-1 border border-gray-300 rounded" value="${item.cidade}" data-field="cidade" data-id="${item.id}">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="text-red-600 hover:text-red-900 delete-btn" data-id="${item.id}">Excluir</button>
+                        </td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+                
+                // Add event listeners for input changes
+                document.querySelectorAll('input[data-field]').forEach(input => {
+                    input.addEventListener('change', function() {
+                        const id = parseInt(this.dataset.id);
+                        const field = this.dataset.field;
+                        const value = this.value;
+                        
+                        const itemToUpdate = data.find(item => item.id === id);
+                        if (itemToUpdate) {
+                            itemToUpdate[field] = value;
+                            saveData();
+                        }
+                    });
+                });
+                
+                // Add event listeners for delete buttons
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = parseInt(this.dataset.id);
+                        data = data.filter(item => item.id !== id);
+                        saveData();
+                        renderTable();
+                    });
+                });
+            }
+            
+            // Save data to localStorage
+            function saveData() {
+                localStorage.setItem('excelData', JSON.stringify(data));
+            }
+        });
+    </script>
+</body>
+</html>
